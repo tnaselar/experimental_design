@@ -1,0 +1,62 @@
+##create experimental design for single.object.1000 experiment
+import glob
+from scipy.io import loadmat
+import os
+from numpy import random
+from experimental_design.src.experiments import fmri_experiment
+base_directory = '/Data/tmp/single.object.1000.med.font/'#'/musc.repo/mri/3T.musc/Presentation/single.object.1000/'
+imagery_run_directories = glob.glob(base_directory+'imagery_*')
+blank_screen = 'blank.png'
+seconds_per_state = 2
+vols_per_state = 2
+frames_per_state = 10 ##200 msec per frame
+number_of_cue_frames = 3 ##per active state
+number_of_blank_frames = frames_per_state ##per blank state
+number_of_stim_frames_img = 7 
+number_of_stim_frames_pcp= 6/2 ##to accomadate flashing stim will be broken up with one blank so we split into two
+
+def imagery_state(cue, location):
+  return [cue]*number_of_cue_frames+[location]*number_of_stim_frames_img
+  
+def pcp_state(cue, image):
+  return [cue]*number_of_cue_frames+[image]*number_of_stim_frames_pcp+[blank_screen]+[image]*number_of_stim_frames_pcp
+
+  ##for each run we have
+  ##folder ~ cannonical
+		##cannoncial images of selected objects
+		##text files giving label name for cannonical object
+  ##folder ~ frame_images
+	     ##the various frames containning scaled/offset pictures of cannonical objects, their cues, and a blank.
+  ##designmatrix: a .mat file with a design matrix in it.
+
+##for each run folder
+blank_state = [blank_screen]*number_of_blank_frames
+while imagery_run_directories:
+  current_dir = imagery_run_directories.pop()
+  img_stim_list = []
+  img_stim_list.append(blank_state)
+  pcp_stim_list = []
+  pcp_stim_list.append(blank_state)
+  image_frames = glob.glob(current_dir+"/frame_files/*image*")
+  image_frames.sort()
+  cue_frames = glob.glob(current_dir+"/frame_files/*cue*")
+  cue_frames.sort()
+  location_frames = glob.glob(current_dir+"/frame_files/*location*")
+  location_frames.sort()
+  dx = list(random.permutation(len(image_frames)))
+  while dx:
+    random_index = dx.pop()
+    current_image = os.path.split(image_frames[random_index])[1] ##this is equal to the image_id of the parent image for this object
+    current_cue = os.path.split(cue_frames[random_index])[1]
+    current_location = os.path.split(location_frames[random_index])[1]
+    img_stim_list.append(imagery_state(current_cue, current_location))
+    pcp_stim_list.append(pcp_state(current_cue, current_image))
+  ##open design matrix
+  design_matrix = loadmat(glob.glob(current_dir+'/onoff*')[0])['onoff']
+  ##instaniate an fmri_experiment object
+  img_run = fmri_experiment(design_matrix, img_stim_list, seconds_per_state, vols_per_state)
+  pcp_run = fmri_experiment(design_matrix, pcp_stim_list, seconds_per_state, vols_per_state)
+  ##use object to build frame file and write it
+  img_run.print_frame_list(current_dir+'/frame_files/img_frame_list.txt')
+  pcp_run.print_frame_list(current_dir+'/frame_files/pcp_frame_list.txt')
+  

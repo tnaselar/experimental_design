@@ -1,0 +1,88 @@
+##create the pictures for the imagery and imagery validation conditions for the 500x500 experiment
+
+##===create object montages
+from PIL import Image
+from object_parsing.src import image_objects as imo
+import os
+im_dir = '/Data/7T.cmrr/Presentation/pictures/'
+im_ids = \
+['001133.png',
+ '001175.png',
+ '002954.png',
+ '003084.png',
+ '003260.png',
+ '003275.png',
+ '003330.png',
+ '003415.png',
+ '003560.png',
+ '003562.png',
+ '003974.png',
+ '004194.png']
+
+labels = ['garden', 'wtrfal', 'bldngs', 'fitrck', 'awoman', 'achild', 'anorca', 'scrpio', 'pncils', 'zebras', 'peeple', 'flower']
+mask_dir = '/Data/tmp/labeled_image_maps/'
+background_image = '/Data/7T.cmrr/Presentation/pictures/000000.png'
+SIDE = 500
+FOV = 43
+
+save_to = '/Data/tmp/one_object_imagery/'
+
+
+##montage geometry
+SIDE = 500
+scaling_factor = 1
+grid_spacing = 5
+min_obj_size = 20
+max_obj_size = 150
+
+##object parameters
+min_obj_size = 55 ##< about 10 degrees diameter
+max_obj_size = 125 ##<< about 20 degrees in diameter 
+mask_margin = 41
+background_contrast = False
+
+##background and label
+corner_size = 5  ##<<about .5 deg.
+font_size = 6 ##<< should be about 1 deg
+
+
+def grab_image(im_dir, im_ids):
+  from numpy.random import randint
+  imdx = im_ids.pop()
+  im = im_dir+imdx
+  mask = mask_dir+imdx
+  tmp_mask = Image.open(mask)
+  objdx = max(find_object_values(tmp_mask))   ##get what will probably be the top mask
+  obj_size = imo.one_object(im,mask,objdx).radius()
+  print obj_size
+  return im, mask, objdx, imdx
+
+  
+  
+def find_object_values(mask):
+	'''
+	object_values = find_object_values(mask)
+	Find pixel values of each of the objects in an object mask
+	Returns a numpy array containing the values. 
+	len(object_values) = total number of objects in the mask
+	'''
+	from numpy import unique, array
+	return unique(array(mask))
+
+
+while im_ids:
+  ##instantiate montage with random geometry
+  obj_comp = imo.simple_composition(SIDE, 1, min_radius=min_obj_size, max_radius=max_obj_size)
+  m = imo.montage(SIDE, background_image, obj_comp, mask_margin = mask_margin, object_background=background_contrast, reveal_corners = 5)
+  ##loop over number of objects
+  while not m.full():
+    ##sample an object
+    im, mask, object_id, imdx = grab_image(im_dir, im_ids)
+    m.add_one_object(im, mask, object_id)
+  ##print picture to file
+  m.picture.save(save_to+imdx)
+  m.background_picture.save(save_to+'background.'+imdx)
+  labeled = imo.put_text(m.background_picture, message = labels.pop(), position = (.5, .5), size = font_size)
+  labeled.save(save_to+'label.background.'+imdx)
+  
+  

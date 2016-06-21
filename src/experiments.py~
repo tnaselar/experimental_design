@@ -1,0 +1,24 @@
+class fmri_experiment:
+  def __init__(self, design_matrix, stim_list, seconds_per_state, vols_per_state):
+    self.design_matrix = design_matrix
+    self.stim_list = stim_list
+    self.seconds_per_state = seconds_per_state
+    self.vols_per_state = vols_per_state
+    #self.frame_list = self.build_frame_list()
+ 
+    
+  def build_frame_list(self):
+    from numpy import where
+    frame_list = []
+    for ii in self.design_matrix.T: ##<<iterate over columns
+      dx = where(ii)[0]
+      if not dx:
+	dx = 0
+      frame_list.extend(self.stim_list[dx])
+    return frame_list
+    
+  def print_frame_list(self, frame_list_file):
+    with open(frame_list_file, 'w') as ff:
+      for item in self.frame_list:
+	ff.write("%s\n" % item)
+
