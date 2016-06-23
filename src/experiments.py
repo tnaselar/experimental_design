@@ -2,10 +2,12 @@
 def make_design_matrix(number_of_states, number_of_reps, blank_states= [5, .5, 10], seconds_per_state=None):
   import numpy as np
   '''a simple experimental design matrix with random inter-stimulus intervals.
-  make_design_matrix(number_of_states, blank_states= [10, 0.5, 10], seconds_per_state=none)
+  make_design_matrix(number_of_states, number_of_reps, blank_states= [10, 0.5, 10], seconds_per_state=none)
   blank_states = [number_at_beginning, probability_during, number at end] the number of TRs
   for each isi is determined by the middle argument as 1+poissrand(blank_states[1]) 
-  note that seconds_per_state is for convenience if you want a print-out of how long the experiment will take'''
+  note that seconds_per_state is for convenience if you want a print-out of how long the experiment will take
+  does not allow back-to-back repeats of conditions.
+  '''
   time_line = [0]*blank_states[0]
   ##create time-line by popping off random states. don't allow back-to-back repeats.
   for ii in range(number_of_reps):
